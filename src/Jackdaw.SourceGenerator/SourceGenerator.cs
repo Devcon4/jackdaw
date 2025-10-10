@@ -62,7 +62,7 @@ public class JackdawGenerator : IIncrementalGenerator
     sb.AppendLine("using System.Threading;");
     sb.AppendLine("using System.Threading.Tasks;");
     sb.AppendLine("using Microsoft.Extensions.DependencyInjection;");
-    sb.AppendLine("using Jackdaw.Core;");
+    sb.AppendLine("using Jackdaw.Interfaces;");
     sb.AppendLine();
     sb.AppendLine("namespace Jackdaw.Core;");
     sb.AppendLine();
