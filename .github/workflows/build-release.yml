@@ -54,15 +54,10 @@ jobs:
 
     - name: Pack all NuGet packages
       run: |
-        if [ -n "$PACKAGE_VERSION" ]; then
-          dotnet pack ${{ env.INTERFACES_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
-          dotnet pack ${{ env.INMEMORY_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
-          dotnet pack ${{ env.CORE_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
-        else
-          dotnet pack ${{ env.INTERFACES_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }}
-          dotnet pack ${{ env.INMEMORY_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }}
-          dotnet pack ${{ env.CORE_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }}
-        fi
+        dotnet pack ${{ env.GENERATOR_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
+        dotnet pack ${{ env.INTERFACES_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
+        dotnet pack ${{ env.INMEMORY_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
+        dotnet pack ${{ env.CORE_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
