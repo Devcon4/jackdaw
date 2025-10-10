@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Jackdaw.SourceGenerator;
 
+
 [Generator]
 public class JackdawGenerator : IIncrementalGenerator
 {
