@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '8.0.x'
+  DOTNET_VERSION: '9.0.x'
   PROJECT_PATH: 'src/Jackdaw.Core/Jackdaw.Core.csproj'
   GENERATOR_PATH: 'src/Jackdaw.SourceGenerator/Jackdaw.SourceGenerator.csproj'
   PACKAGE_OUTPUT_DIR: ${{ github.workspace }}/nupkgs
@@ -28,8 +28,11 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore dependencies
-      run: dotnet restore
+    - name: Restore Core dependencies
+      run: dotnet restore ${{ env.PROJECT_PATH }}
+
+    - name: Restore Source Generator dependencies
+      run: dotnet restore ${{ env.GENERATOR_PATH }}
 
     - name: Build Source Generator
       run: dotnet build ${{ env.GENERATOR_PATH }} -c Release --no-restore
