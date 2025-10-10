@@ -7,6 +7,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   DOTNET_VERSION: '9.0.x'
   PROJECT_PATH: 'src/Jackdaw.Core/Jackdaw.Core.csproj'
