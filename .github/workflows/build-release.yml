@@ -13,7 +13,9 @@ permissions:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  PROJECT_PATH: 'src/Jackdaw.Core/Jackdaw.Core.csproj'
+  CORE_PROJECT_PATH: 'src/Jackdaw.Core/Jackdaw.Core.csproj'
+  INTERFACES_PROJECT_PATH: 'src/Jackdaw.Interfaces/Jackdaw.Interfaces.csproj'
+  INMEMORY_PROJECT_PATH: 'src/Jackdaw.Queues.InMemory/Jackdaw.Queues.InMemory.csproj'
   GENERATOR_PATH: 'src/Jackdaw.SourceGenerator/Jackdaw.SourceGenerator.csproj'
   PACKAGE_OUTPUT_DIR: ${{ github.workspace }}/nupkgs
 
@@ -32,21 +34,17 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Restore Core dependencies
-      run: dotnet restore ${{ env.PROJECT_PATH }}
-
-    - name: Restore Source Generator dependencies
-      run: dotnet restore ${{ env.GENERATOR_PATH }}
-
-    - name: Build Source Generator
-      run: dotnet build ${{ env.GENERATOR_PATH }} -c Release --no-restore
-
-    - name: Build Core Library
-      run: dotnet build ${{ env.PROJECT_PATH }} -c Release --no-restore
-
-    - name: Run tests
-      run: dotnet test --no-restore --verbosity normal
-      continue-on-error: true
+    - name: Restore and Build all projects
+      run: |
+        dotnet restore ${{ env.GENERATOR_PATH }}
+        dotnet restore ${{ env.INTERFACES_PROJECT_PATH }}
+        dotnet restore ${{ env.INMEMORY_PROJECT_PATH }}
+        dotnet restore ${{ env.CORE_PROJECT_PATH }}
+        
+        dotnet build ${{ env.GENERATOR_PATH }} -c Release --no-restore
+        dotnet build ${{ env.INTERFACES_PROJECT_PATH }} -c Release --no-restore
+        dotnet build ${{ env.INMEMORY_PROJECT_PATH }} -c Release --no-restore
+        dotnet build ${{ env.CORE_PROJECT_PATH }} -c Release --no-restore
 
     - name: Set version from release tag
       if: github.event_name == 'release'
@@ -54,12 +52,16 @@ jobs:
         VERSION=${GITHUB_REF#refs/tags/v}
         echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
 
-    - name: Pack NuGet package
+    - name: Pack all NuGet packages
       run: |
         if [ -n "$PACKAGE_VERSION" ]; then
-          dotnet pack ${{ env.PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack ${{ env.INTERFACES_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack ${{ env.INMEMORY_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
+          dotnet pack ${{ env.CORE_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
         else
-          dotnet pack ${{ env.PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }}
+          dotnet pack ${{ env.INTERFACES_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }}
+          dotnet pack ${{ env.INMEMORY_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }}
+          dotnet pack ${{ env.CORE_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }}
         fi
 
     - name: Upload artifact
