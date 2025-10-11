@@ -15,7 +15,6 @@ public partial class JackdawBuilder(IServiceCollection services)
   public JackdawBuilder UseInMemoryQueue(Action<InMemoryQueueOptions>? configure = null)
   {
     var options = new InMemoryQueueOptions();
-    Console.WriteLine("Configuring InMemoryQueue with options: " + options);
     configure?.Invoke(options);
     services.AddSingleton<IMessageQueue>(new InMemoryQueue(options.MaxQueueSize));
     _results = _results with { HasQueue = true };
