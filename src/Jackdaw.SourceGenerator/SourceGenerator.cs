@@ -32,7 +32,7 @@ public class JackdawGenerator : IIncrementalGenerator
     var handlerInterface = classSymbol.AllInterfaces
         .FirstOrDefault(i =>
             i.IsGenericType &&
-            i.ConstructedFrom.ToDisplayString() == "Jackdaw.Core.IRequestHandler<TRequest, TResponse>");
+            i.ConstructedFrom.ToDisplayString() == "Jackdaw.Interfaces.IRequestHandler<TRequest, TResponse>");
 
     if (handlerInterface is null)
       return null;
