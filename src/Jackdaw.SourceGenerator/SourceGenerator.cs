@@ -118,6 +118,10 @@ public class JackdawGenerator : IIncrementalGenerator
     sb.AppendLine("            throw new InvalidOperationException(\"A message queue must be configured. Call UseInMemoryQueue or another queue configuration method.\");");
     sb.AppendLine("        }");
     sb.AppendLine();
+    foreach (var handler in validHandlers)
+    {
+      sb.AppendLine($"        services.AddScoped<IRequestHandler<{handler.RequestType}, {handler.ResponseType}>, {handler.HandlerType}>();");
+    }
     sb.AppendLine("        services.AddSingleton<IHandlerDispatcher, GeneratedHandlerDispatcher>();");
     sb.AppendLine("        services.AddSingleton<IMediator, Mediator>();");
     sb.AppendLine("        services.AddHostedService<MediatorRunner>();");

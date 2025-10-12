@@ -21,14 +21,6 @@ public partial class JackdawBuilder(IServiceCollection services)
     return this;
   }
 
-  public JackdawBuilder AddHandler<THandler, TRequest, TResponse>()
-    where THandler : class, IRequestHandler<TRequest, TResponse>
-    where TRequest : class, IRequest<TResponse> where TResponse : IResponse
-  {
-    services.AddScoped<IRequestHandler<TRequest, TResponse>, THandler>();
-    return this;
-  }
-
   public BuildResults Results => _results;
 
 }
