@@ -32,7 +32,15 @@ var sampleTodos = new Todo[] {
 
 var todosApi = app.MapGroup("/todos");
 todosApi.MapGet("/", () => sampleTodos);
-todosApi.MapGet("/{id}", async (int id, [FromServices] IMediator mediator) => await mediator.Send(new GetTodoQuery(id)));
+todosApi.MapGet("/{id}", async (int id, [FromServices] IMediator mediator, [FromServices] ILogger<Program> logger) =>
+{
+  var sw = System.Diagnostics.Stopwatch.StartNew();
+  logger.LogInformation("Received request for Todo with ID {Id}", id);
+  var res = await mediator.Send(new GetTodoQuery(id));
+  sw.Stop();
+  logger.LogInformation("Handled request for Todo with ID {Id} in {ElapsedMilliseconds}", id, sw.ElapsedTicks);
+  return res.Todo is not null ? Results.Ok(res.Todo) : Results.NotFound();
+});
 
 app.Run();
 
@@ -51,12 +59,14 @@ public record GetTodoQuery(int Id) : IRequest<GetTodoResponse>;
 
 public record GetTodoResponse(Todo? Todo) : IResponse;
 
-public class GetTodoHandler : IRequestHandler<GetTodoQuery, GetTodoResponse>
+public class GetTodoHandler : IHandler<GetTodoQuery, GetTodoResponse>
 {
+  private readonly IMediator _mediator;
   private readonly Todo[] _todos;
 
-  public GetTodoHandler()
+  public GetTodoHandler(IMediator mediator)
   {
+    _mediator = mediator;
     _todos = new[] {
       new Todo(1, "Walk the dog"),
       new Todo(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
@@ -66,10 +76,11 @@ public class GetTodoHandler : IRequestHandler<GetTodoQuery, GetTodoResponse>
     };
   }
 
-  public Task<GetTodoResponse> Handle(GetTodoQuery request, CancellationToken cancellationToken)
+  public async Task<GetTodoResponse> Handle(GetTodoQuery request, CancellationToken cancellationToken)
   {
+    await _mediator.Send(new FetchEvent());
     var todo = _todos.FirstOrDefault(t => t.Id == request.Id);
-    return Task.FromResult(new GetTodoResponse(todo));
+    return new GetTodoResponse(todo);
   }
 }
 
@@ -77,10 +88,11 @@ public record FetchEvent() : IRequest<FetchEventResponse>;
 public record FetchEventResponse(string Message) : IResponse;
 
 [JackdawQueue("DomainEvents")]
-public class FetchEventHandler : IRequestHandler<FetchEvent, FetchEventResponse>
+public class FetchEventHandler(ILogger<FetchEventHandler> logger) : IHandler<FetchEvent, FetchEventResponse>
 {
   public Task<FetchEventResponse> Handle(FetchEvent request, CancellationToken cancellationToken)
   {
+    logger.LogInformation("Handling FetchEvent");
     return Task.FromResult(new FetchEventResponse("Event fetched successfully."));
   }
 }

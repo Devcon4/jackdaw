@@ -34,7 +34,7 @@ public class JackdawGenerator : IIncrementalGenerator
     var handlerInterface = classSymbol.AllInterfaces
         .FirstOrDefault(i =>
             i.IsGenericType &&
-            i.ConstructedFrom.ToDisplayString() == "Jackdaw.Interfaces.IRequestHandler<TRequest, TResponse>");
+            i.ConstructedFrom.ToDisplayString() == "Jackdaw.Interfaces.IHandler<TRequest, TResponse>");
 
     if (handlerInterface is null)
       return null;
@@ -123,7 +123,7 @@ public class JackdawGenerator : IIncrementalGenerator
         var hash = $"m{System.Math.Abs(handler.ResponseType.GetHashCode())}";
         sb.AppendLine($"            case RequestMetadata<{handler.ResponseType}> {hash}:");
         sb.AppendLine($"            {{");
-        sb.AppendLine($"                var handler = serviceProvider.GetRequiredService<IRequestHandler<{handler.RequestType}, {handler.ResponseType}>>();");
+        sb.AppendLine($"                var handler = serviceProvider.GetRequiredService<IHandler<{handler.RequestType}, {handler.ResponseType}>>();");
         sb.AppendLine($"                try");
         sb.AppendLine($"                {{");
         sb.AppendLine($"                    var response = await handler.Handle(({handler.RequestType}){hash}.Request, cancellationToken);");
@@ -210,7 +210,7 @@ public class JackdawGenerator : IIncrementalGenerator
     // Register all handlers
     foreach (var handler in handlers)
     {
-      sb.AppendLine($"        services.AddScoped<IRequestHandler<{handler.RequestType}, {handler.ResponseType}>, {handler.HandlerType}>();");
+      sb.AppendLine($"        services.AddScoped<IHandler<{handler.RequestType}, {handler.ResponseType}>, {handler.HandlerType}>();");
     }
 
     // Register dispatcher (shared)
