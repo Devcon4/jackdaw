@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Jackdaw.Core\Jackdaw.Core.csproj" />
+    <ProjectReference Include="..\src\Jackdaw.Queues.InMemory\Jackdaw.Queues.InMemory.csproj" />
+    <!-- include sourceGenerator -->
+    <ProjectReference Include="..\src\Jackdaw.SourceGenerator\Jackdaw.SourceGenerator.csproj" 
+    OutputItemType="Analyzer" 
+    ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <PublishAot>true</PublishAot>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)\GeneratedFiles</CompilerGeneratedFilesOutputPath>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+  </PropertyGroup>
+
+</Project>

@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -11,6 +11,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jackdaw.Queues.InMemory", "src\Jackdaw.Queues.InMemory\Jackdaw.Queues.InMemory.csproj", "{E42B693A-6FA5-B4B7-1CAB-2B5CE83B354F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jackdaw.Unit.Tests", "tests\Jackdaw.Unit.Tests\Jackdaw.Unit.Tests.csproj", "{134A1120-F475-A01E-B4AC-9062A276B432}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "jackdaw.example", "example\jackdaw.example.csproj", "{63AEDA79-751C-42B9-BD57-79DC660DACB3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,6 +32,10 @@ Global
 		{134A1120-F475-A01E-B4AC-9062A276B432}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{134A1120-F475-A01E-B4AC-9062A276B432}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{134A1120-F475-A01E-B4AC-9062A276B432}.Release|Any CPU.Build.0 = Release|Any CPU
+		{63AEDA79-751C-42B9-BD57-79DC660DACB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{63AEDA79-751C-42B9-BD57-79DC660DACB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{63AEDA79-751C-42B9-BD57-79DC660DACB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{63AEDA79-751C-42B9-BD57-79DC660DACB3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
