@@ -4,17 +4,33 @@ using Microsoft.Extensions.Hosting;
 
 namespace Jackdaw.Core;
 
-public class MediatorRunner(IMessageQueue messageQueue, IServiceProvider serviceProvider, IHandlerDispatcher dispatcher) : BackgroundService
+public class MediatorRunner : BackgroundService
 {
+  private readonly string _queueName;
+  private readonly IServiceProvider _serviceProvider;
+  private readonly IHandlerDispatcher _dispatcher;
+
+  public MediatorRunner(
+      string queueName,
+      IServiceProvider serviceProvider,
+      IHandlerDispatcher dispatcher)
+  {
+    _queueName = queueName;
+    _serviceProvider = serviceProvider;
+    _dispatcher = dispatcher;
+  }
+
   protected override async Task ExecuteAsync(CancellationToken stoppingToken)
   {
+    var messageQueue = _serviceProvider.GetRequiredKeyedService<IMessageQueue>(_queueName);
+
     while (!stoppingToken.IsCancellationRequested)
     {
       var request = await messageQueue.DequeueAsync(stoppingToken);
 
-      using var scope = serviceProvider.CreateScope();
+      using var scope = _serviceProvider.CreateScope();
 
-      await dispatcher.DispatchAsync(request, scope.ServiceProvider, stoppingToken);
+      await _dispatcher.DispatchAsync(request, scope.ServiceProvider, stoppingToken);
     }
   }
 }

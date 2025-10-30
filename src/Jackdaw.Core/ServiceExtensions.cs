@@ -1,26 +1,42 @@
 
 using Jackdaw.Interfaces;
-using Jackdaw.Queues.InMemory;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Jackdaw.Core;
 
-public partial class JackdawBuilder(IServiceCollection services)
+public class JackdawBuilder(
+    IServiceCollection Services)
 {
-  public record struct BuildResults(bool HasQueue);
-  public record InMemoryQueueOptions(int MaxQueueSize = 1024);
-
-  private BuildResults _results = new(false);
-
-  public JackdawBuilder UseInMemoryQueue(Action<InMemoryQueueOptions>? configure = null)
+  private HashSet<QueueBuilder> _queueBuilders = new();
+  public QueueBuilder AddQueue(
+      string name)
   {
-    var options = new InMemoryQueueOptions();
-    configure?.Invoke(options);
-    services.AddSingleton<IMessageQueue>(new InMemoryQueue(options.MaxQueueSize));
-    _results = _results with { HasQueue = true };
-    return this;
+    var queueBuilder = new QueueBuilder(name, Services);
+    _queueBuilders.Add(queueBuilder);
+    return queueBuilder;
   }
 
-  public BuildResults Results => _results;
-
+  public bool Valid()
+  {
+    foreach (var builder in _queueBuilders)
+    {
+      if (!builder.Valid())
+      {
+        return false;
+      }
+    }
+    return true;
+  }
 }
+
+// public static class ServiceExtensions
+// {
+//   public static JackdawBuilder AddJackdaw(
+//       this IServiceCollection services,
+//       Action<JackdawBuilder> configure)
+//   {
+//     var builder = new JackdawBuilder(services);
+//     configure(builder);
+//     return builder;
+//   }
+// }

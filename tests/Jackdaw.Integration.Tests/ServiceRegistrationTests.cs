@@ -1,6 +1,7 @@
 using Jackdaw.Core;
 using Jackdaw.Integration.Tests.TestHelpers;
 using Jackdaw.Interfaces;
+using Jackdaw.Queues.InMemory;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -13,25 +14,19 @@ namespace Jackdaw.Integration.Tests;
 public class ServiceRegistrationTests
 {
   [Fact]
-  public void Builder_WithQueueAndHandlers_ShouldRegisterAllComponents()
+  public void AddJackdawQueue_ShouldRegisterQueueSuccessfully()
   {
     // Arrange
     var services = new ServiceCollection();
     var builder = new JackdawBuilder(services);
 
     // Act
-    builder
-        .UseInMemoryQueue(options => options = options with { MaxQueueSize = 100 })
-        .AddHandler<TestRequestHandler, TestRequest, TestResponse>()
-        .AddHandler<EmptyRequestHandler, EmptyRequest, EmptyResponse>();
+    builder.AddQueue("TestQueue").UseInMemory();
 
     var serviceProvider = services.BuildServiceProvider();
 
     // Assert
-    Assert.True(builder.Results.HasQueue);
-    Assert.NotNull(serviceProvider.GetService<IMessageQueue>());
-    Assert.NotNull(serviceProvider.GetService<IRequestHandler<TestRequest, TestResponse>>());
-    Assert.NotNull(serviceProvider.GetService<IRequestHandler<EmptyRequest, EmptyResponse>>());
+    Assert.NotNull(serviceProvider.GetKeyedService<IMessageQueue>("TestQueue"));
   }
 
   [Fact]
@@ -154,37 +149,4 @@ public class ServiceRegistrationTests
         async () => await handler.Handle(request, cts.Token));
   }
 
-  [Fact]
-  public void ServiceCollection_WithoutQueue_ShouldShowBuilderState()
-  {
-    // Arrange
-    var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
-
-    // Act
-    builder.AddHandler<TestRequestHandler, TestRequest, TestResponse>();
-    // Not calling UseInMemoryQueue
-
-    // Assert
-    Assert.False(builder.Results.HasQueue);
-  }
-
-  [Fact]
-  public void ServiceCollection_WithQueue_ShouldRegisterServices()
-  {
-    // Arrange
-    var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
-
-    // Act
-    builder.UseInMemoryQueue();
-    builder.AddHandler<TestRequestHandler, TestRequest, TestResponse>();
-
-    var serviceProvider = services.BuildServiceProvider();
-
-    // Assert
-    Assert.NotNull(serviceProvider.GetService<IMessageQueue>());
-    Assert.NotNull(serviceProvider.GetService<IRequestHandler<TestRequest, TestResponse>>());
-    Assert.True(builder.Results.HasQueue);
-  }
 }

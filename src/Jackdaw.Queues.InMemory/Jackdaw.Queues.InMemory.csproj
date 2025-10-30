@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Jackdaw.Interfaces\Jackdaw.Interfaces.csproj" />
+    <ProjectReference Include="..\Jackdaw.Core\Jackdaw.Core.csproj" />
   </ItemGroup>
 
 </Project>

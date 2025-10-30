@@ -13,7 +13,10 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
+
     var request = new TestRequest("test-data");
 
     // Configure mock to capture the metadata and complete it
@@ -44,7 +47,9 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
     var capturedIds = new List<Guid>();
 
     mockQueue.EnqueueAsync<TestResponse>(
@@ -79,7 +84,9 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
     var request = new TestRequest("specific-data");
     RequestMetadata<TestResponse>? capturedMetadata = null;
 
@@ -108,7 +115,9 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
     var request = new TestRequest("test");
     var cts = new CancellationTokenSource();
 
@@ -138,7 +147,9 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
     var request = new TestRequest("test");
 
     mockQueue.EnqueueAsync<TestResponse>(
@@ -158,7 +169,9 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
     var request = new TestRequest("test");
 
     mockQueue.EnqueueAsync<TestResponse>(
@@ -187,7 +200,9 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
     var completedCount = 0;
 
     mockQueue.EnqueueAsync<TestResponse>(
@@ -198,10 +213,10 @@ public class MediatorTests
           var metadata = callInfo.ArgAt<RequestMetadata<TestResponse>>(0);
           Task.Run(async () =>
               {
-              await Task.Delay(10); // Simulate some processing time
-              metadata.CompletionSource.SetResult(new TestResponse("Done"));
-              Interlocked.Increment(ref completedCount);
-            });
+                await Task.Delay(10); // Simulate some processing time
+                metadata.CompletionSource.SetResult(new TestResponse("Done"));
+                Interlocked.Increment(ref completedCount);
+              });
           return Task.FromResult(metadata.RequestId);
         });
 
@@ -226,7 +241,9 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
 
     mockQueue.EnqueueAsync<TestResponse>(
         Arg.Any<IRequestMetadata>(),
@@ -263,7 +280,9 @@ public class MediatorTests
   {
     // Arrange
     var mockQueue = Substitute.For<IMessageQueue>();
-    var mediator = new Mediator(mockQueue);
+    var mockRouter = Substitute.For<IQueueRouter>();
+    mockRouter.GetQueue(Arg.Any<TestRequest>()).Returns(mockQueue);
+    var mediator = new Mediator(mockRouter);
     var request = new TestRequest("test");
     var cts = new CancellationTokenSource();
 

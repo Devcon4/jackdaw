@@ -1,58 +1,44 @@
 using Jackdaw.Core;
 using Jackdaw.Interfaces;
+using Jackdaw.Queues.InMemory;
 using Jackdaw.Unit.Tests.TestHelpers;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Jackdaw.Unit.Tests.Core;
 
-public class JackdawBuilderTests
+public class QueueBuilderTests
 {
   [Fact]
-  public void UseInMemoryQueue_ShouldRegisterQueueInServices()
+  public void AddJackdawQueue_WithInMemory_ShouldRegisterQueueInServices()
   {
     // Arrange
     var services = new ServiceCollection();
     var builder = new JackdawBuilder(services);
 
     // Act
-    builder.UseInMemoryQueue();
+    builder.AddQueue("TestQueue").UseInMemory().AsDefault();
     var serviceProvider = services.BuildServiceProvider();
-    var queue = serviceProvider.GetService<IMessageQueue>();
+    var queue = serviceProvider.GetKeyedService<IMessageQueue>("TestQueue");
 
     // Assert
     Assert.NotNull(queue);
   }
 
   [Fact]
-  public void UseInMemoryQueue_ShouldSetHasQueueToTrue()
+  public void AddJackdawQueue_WithDefaultMaxSize_ShouldRegisterSuccessfully()
   {
     // Arrange
     var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
 
     // Act
-    builder.UseInMemoryQueue();
-
-    // Assert
-    Assert.True(builder.Results.HasQueue);
-  }
-
-  [Fact]
-  public void UseInMemoryQueue_WithoutConfiguration_ShouldUseDefaultOptions()
-  {
-    // Arrange
-    var services = new ServiceCollection();
     var builder = new JackdawBuilder(services);
-
-    // Act
-    builder.UseInMemoryQueue();
+    builder.AddQueue("DefaultQueue").UseInMemory();
     var serviceProvider = services.BuildServiceProvider();
-    var queue = serviceProvider.GetService<IMessageQueue>();
+    var queue = serviceProvider.GetKeyedService<IMessageQueue>("DefaultQueue");
 
     // Assert
     Assert.NotNull(queue);
-    // The queue should work with default max size (1024)
     Assert.IsAssignableFrom<IMessageQueue>(queue);
   }
 
@@ -61,247 +47,88 @@ public class JackdawBuilderTests
   [InlineData(100)]
   [InlineData(500)]
   [InlineData(2048)]
-  public void UseInMemoryQueue_WithCustomMaxQueueSize_ShouldConfigureCorrectly(int maxQueueSize)
+  public void AddJackdawQueue_WithCustomMaxQueueSize_ShouldConfigureCorrectly(int maxQueueSize)
   {
     // Arrange
     var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
 
     // Act
-    builder.UseInMemoryQueue(options =>
-    {
-      options = options with { MaxQueueSize = maxQueueSize };
-    });
+    var builder = new JackdawBuilder(services);
+    builder.AddQueue("CustomQueue").UseInMemory(new(maxQueueSize));
     var serviceProvider = services.BuildServiceProvider();
-    var queue = serviceProvider.GetService<IMessageQueue>();
+    var queue = serviceProvider.GetKeyedService<IMessageQueue>("CustomQueue");
 
     // Assert
     Assert.NotNull(queue);
   }
 
   [Fact]
-  public void UseInMemoryQueue_ShouldReturnBuilderForChaining()
+  public void AddJackdawQueue_MultipleQueues_ShouldRegisterAll()
   {
     // Arrange
     var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
 
     // Act
-    var returnedBuilder = builder.UseInMemoryQueue();
-
-    // Assert
-    Assert.Same(builder, returnedBuilder);
-  }
-
-  [Fact]
-  public void AddHandler_ShouldRegisterHandlerInServices()
-  {
-    // Arrange
-    var services = new ServiceCollection();
     var builder = new JackdawBuilder(services);
-
-    // Act
-    builder.AddHandler<TestRequestHandler, TestRequest, TestResponse>();
-    var serviceProvider = services.BuildServiceProvider();
-    var handler = serviceProvider.GetService<IRequestHandler<TestRequest, TestResponse>>();
-
-    // Assert
-    Assert.NotNull(handler);
-    Assert.IsType<TestRequestHandler>(handler);
-  }
-
-  [Fact]
-  public void AddHandler_ShouldReturnBuilderForChaining()
-  {
-    // Arrange
-    var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
-
-    // Act
-    var returnedBuilder = builder.AddHandler<TestRequestHandler, TestRequest, TestResponse>();
-
-    // Assert
-    Assert.Same(builder, returnedBuilder);
-  }
-
-  [Fact]
-  public void AddHandler_MultipleHandlers_ShouldRegisterAll()
-  {
-    // Arrange
-    var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
-
-    // Act
-    builder.AddHandler<TestRequestHandler, TestRequest, TestResponse>();
-    builder.AddHandler<EmptyRequestHandler, EmptyRequest, EmptyResponse>();
+    builder.AddQueue("Queue1").UseInMemory();
+    builder.AddQueue("Queue2").UseInMemory();
     var serviceProvider = services.BuildServiceProvider();
 
     // Assert
-    var handler1 = serviceProvider.GetService<IRequestHandler<TestRequest, TestResponse>>();
-    var handler2 = serviceProvider.GetService<IRequestHandler<EmptyRequest, EmptyResponse>>();
-
-    Assert.NotNull(handler1);
-    Assert.NotNull(handler2);
-    Assert.IsType<TestRequestHandler>(handler1);
-    Assert.IsType<EmptyRequestHandler>(handler2);
+    var queue1 = serviceProvider.GetKeyedService<IMessageQueue>("Queue1");
+    var queue2 = serviceProvider.GetKeyedService<IMessageQueue>("Queue2");
+    Assert.NotNull(queue1);
+    Assert.NotNull(queue2);
   }
 
   [Fact]
-  public void AddHandler_ShouldRegisterAsScoped()
+  public void AddJackdawQueue_WithAsDefault_ShouldRegisterDefaultQueue()
   {
     // Arrange
     var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
 
     // Act
-    builder.AddHandler<CountingTestRequestHandler, TestRequest, TestResponse>();
-    var serviceProvider = services.BuildServiceProvider();
-
-    // Assert - Get handler from different scopes
-    using var scope1 = serviceProvider.CreateScope();
-    using var scope2 = serviceProvider.CreateScope();
-
-    var handler1 = scope1.ServiceProvider.GetService<IRequestHandler<TestRequest, TestResponse>>();
-    var handler2 = scope2.ServiceProvider.GetService<IRequestHandler<TestRequest, TestResponse>>();
-
-    Assert.NotNull(handler1);
-    Assert.NotNull(handler2);
-    Assert.NotSame(handler1, handler2); // Different instances in different scopes
-  }
-
-  [Fact]
-  public void Builder_CanChainMultipleConfigurations()
-  {
-    // Arrange
-    var services = new ServiceCollection();
     var builder = new JackdawBuilder(services);
-
-    // Act
-    var result = builder
-        .UseInMemoryQueue(options => options = options with { MaxQueueSize = 100 })
-        .AddHandler<TestRequestHandler, TestRequest, TestResponse>()
-        .AddHandler<EmptyRequestHandler, EmptyRequest, EmptyResponse>();
-
+    builder.AddQueue("DefaultQueue").UseInMemory().AsDefault();
     var serviceProvider = services.BuildServiceProvider();
 
     // Assert
-    Assert.Same(builder, result);
-    Assert.True(builder.Results.HasQueue);
-
-    var queue = serviceProvider.GetService<IMessageQueue>();
-    var handler1 = serviceProvider.GetService<IRequestHandler<TestRequest, TestResponse>>();
-    var handler2 = serviceProvider.GetService<IRequestHandler<EmptyRequest, EmptyResponse>>();
+    var queue = serviceProvider.GetKeyedService<IMessageQueue>("DefaultQueue");
+    var defaultQueue = serviceProvider.GetService<IDefaultMessageQueue>();
 
     Assert.NotNull(queue);
-    Assert.NotNull(handler1);
-    Assert.NotNull(handler2);
+    Assert.NotNull(defaultQueue);
   }
 
   [Fact]
-  public void BuildResults_InitialState_ShouldHaveHasQueueFalse()
+  public void QueueBuilder_CanChainMultipleConfigurations()
   {
     // Arrange
     var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
 
     // Act
-    var results = builder.Results;
-
-    // Assert
-    Assert.False(results.HasQueue);
-  }
-
-  [Fact]
-  public void UseInMemoryQueue_CalledMultipleTimes_ShouldUseLastConfiguration()
-  {
-    // Arrange
-    var services = new ServiceCollection();
     var builder = new JackdawBuilder(services);
-
-    // Act
-    builder.UseInMemoryQueue(options => options = options with { MaxQueueSize = 10 });
-    builder.UseInMemoryQueue(options => options = options with { MaxQueueSize = 100 });
-
-    // Assert
-    Assert.True(builder.Results.HasQueue);
-    var serviceProvider = services.BuildServiceProvider();
-    var queues = serviceProvider.GetServices<IMessageQueue>().ToList();
-
-    // Should have 2 registrations (both as singleton)
-    Assert.Equal(2, queues.Count);
-  }
-
-  [Theory]
-  [InlineData(1)]
-  [InlineData(3)]
-  [InlineData(5)]
-  public void AddHandler_SameHandlerMultipleTimes_ShouldRegisterMultipleTimes(int registrationCount)
-  {
-    // Arrange
-    var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
-
-    // Act
-    for (int i = 0; i < registrationCount; i++)
-    {
-      builder.AddHandler<TestRequestHandler, TestRequest, TestResponse>();
-    }
+    builder.AddQueue("ChainedQueue").UseInMemory()
+        .AsDefault();
 
     var serviceProvider = services.BuildServiceProvider();
-    var handlers = serviceProvider.GetServices<IRequestHandler<TestRequest, TestResponse>>().ToList();
 
     // Assert
-    Assert.Equal(registrationCount, handlers.Count);
+    var queue = serviceProvider.GetKeyedService<IMessageQueue>("ChainedQueue");
+    var defaultQueue = serviceProvider.GetService<IDefaultMessageQueue>();
+
+    Assert.NotNull(queue);
+    Assert.NotNull(defaultQueue);
   }
 
   [Fact]
-  public void Constructor_WithNullServices_ShouldNotThrow()
-  {
-    // This test verifies the builder can be constructed with a service collection
-    // Arrange & Act
-    var services = new ServiceCollection();
-    var builder = new JackdawBuilder(services);
-
-    // Assert
-    Assert.NotNull(builder);
-    Assert.False(builder.Results.HasQueue);
-  }
-
-  [Fact]
-  public void InMemoryQueueOptions_DefaultValues_ShouldBe1024()
+  public void InMemoryQueueOptions_DefaultValues_ShouldBeSet()
   {
     // Arrange & Act
-    var options = new JackdawBuilder.InMemoryQueueOptions();
+    var options = new InMemoryQueueOptions();
 
     // Assert
-    Assert.Equal(1024, options.MaxQueueSize);
-  }
+    Assert.True(options.MaxQueueSize > 0);
 
-  [Fact]
-  public void InMemoryQueueOptions_WithRecordSyntax_ShouldAllowCustomization()
-  {
-    // Arrange
-    var defaultOptions = new JackdawBuilder.InMemoryQueueOptions();
-
-    // Act
-    var customOptions = defaultOptions with { MaxQueueSize = 2048 };
-
-    // Assert
-    Assert.Equal(1024, defaultOptions.MaxQueueSize);
-    Assert.Equal(2048, customOptions.MaxQueueSize);
-  }
-
-  [Fact]
-  public void BuildResults_IsRecordStruct_ShouldSupportWithSyntax()
-  {
-    // Arrange
-    var results = new JackdawBuilder.BuildResults(false);
-
-    // Act
-    var updatedResults = results with { HasQueue = true };
-
-    // Assert
-    Assert.False(results.HasQueue);
-    Assert.True(updatedResults.HasQueue);
   }
 }
