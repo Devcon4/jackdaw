@@ -9,7 +9,9 @@ public class InMemoryQueue(int maxQueueSize) : IMessageQueue
 {
   private readonly Channel<IRequestMetadata> _channel = Channel.CreateBounded<IRequestMetadata>(new BoundedChannelOptions(maxQueueSize)
   {
-    FullMode = BoundedChannelFullMode.Wait
+    FullMode = BoundedChannelFullMode.Wait,
+    SingleReader = true,
+    AllowSynchronousContinuations = false
   });
 
   public async Task<Guid> EnqueueAsync<TResponse>(IRequestMetadata request, CancellationToken cancellationToken) where TResponse : IResponse
