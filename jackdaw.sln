@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jackdaw.Unit.Tests", "tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "jackdaw.example", "example\jackdaw.example.csproj", "{63AEDA79-751C-42B9-BD57-79DC660DACB3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Jackdaw.Interfaces", "src\Jackdaw.Interfaces\Jackdaw.Interfaces.csproj", "{72B80BDC-19CE-4820-B343-386EB373CA83}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,6 +38,10 @@ Global
 		{63AEDA79-751C-42B9-BD57-79DC660DACB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{63AEDA79-751C-42B9-BD57-79DC660DACB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{63AEDA79-751C-42B9-BD57-79DC660DACB3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72B80BDC-19CE-4820-B343-386EB373CA83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72B80BDC-19CE-4820-B343-386EB373CA83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72B80BDC-19CE-4820-B343-386EB373CA83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72B80BDC-19CE-4820-B343-386EB373CA83}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -44,6 +50,7 @@ Global
 		{33F4A1E8-BA15-B8DE-FAC3-DE8111089113} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{E42B693A-6FA5-B4B7-1CAB-2B5CE83B354F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{134A1120-F475-A01E-B4AC-9062A276B432} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{72B80BDC-19CE-4820-B343-386EB373CA83} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2833E775-A460-4F28-9C76-3CAB18972E45}

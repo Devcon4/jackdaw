@@ -7,7 +7,8 @@ namespace Jackdaw.Core;
 public class JackdawBuilder(
     IServiceCollection Services)
 {
-  private HashSet<QueueBuilder> _queueBuilders = new();
+  private readonly HashSet<QueueBuilder> _queueBuilders = new();
+  private readonly HashSet<Type> _globalMiddlewares = new();
   public QueueBuilder AddQueue(
       string name)
   {
@@ -15,11 +16,20 @@ public class JackdawBuilder(
     _queueBuilders.Add(queueBuilder);
     return queueBuilder;
   }
+  public JackdawBuilder UseMiddleware<TMiddleware>()
+      where TMiddleware : class, IPipelineBehavior
+  {
+    // Register the middleware globally
+    Services.AddScoped<IPipelineBehavior, TMiddleware>();
+    _globalMiddlewares.Add(typeof(TMiddleware));
+    return this;
+  }
 
-  public bool Valid()
+  public bool Initialize()
   {
     foreach (var builder in _queueBuilders)
     {
+      builder.SetGlobalMiddlewares(_globalMiddlewares);
       if (!builder.Valid())
       {
         return false;

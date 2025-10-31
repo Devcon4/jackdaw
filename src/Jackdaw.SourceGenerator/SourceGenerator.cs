@@ -20,9 +20,6 @@ public class JackdawGenerator : IIncrementalGenerator
 
     context.RegisterSourceOutput(handlerClasses.Collect(), GenerateDispatcher);
   }
-  // SourceGenerator.cs changes
-
-  // Step 1: Update HandlerInfo to include queue name
   private static HandlerInfo? GetHandlerInfo(GeneratorSyntaxContext context)
   {
     var classDeclaration = (ClassDeclarationSyntax)context.Node;
@@ -56,14 +53,12 @@ public class JackdawGenerator : IIncrementalGenerator
         queueName);
   }
 
-  // Step 2: Update HandlerInfo record
   private record HandlerInfo(
       string HandlerType,
       string RequestType,
       string ResponseType,
       string QueueName);
 
-  // Step 3: Generate code differently
   private void GenerateDispatcher(SourceProductionContext context, ImmutableArray<HandlerInfo?> handlers)
   {
     var validHandlers = handlers.Where(h => h is not null).Cast<HandlerInfo>().ToList();
@@ -96,57 +91,76 @@ public class JackdawGenerator : IIncrementalGenerator
 
     context.AddSource("HandlerDispatcher.g.cs", code);
   }
-
   private string GenerateDispatcherClass(List<HandlerInfo> handlers)
   {
     if (handlers.Count == 0)
     {
       return """
-        file sealed class GeneratedHandlerDispatcher : IHandlerDispatcher
-        {
-            public async Task DispatchAsync(IRequestMetadata metadata, IServiceProvider serviceProvider, CancellationToken cancellationToken)
+            file sealed class GeneratedHandlerDispatcher : IHandlerDispatcher
             {
-                throw new InvalidOperationException("No handlers registered.");
+                public async Task DispatchAsync(IRequestMetadata metadata, IServiceProvider serviceProvider, CancellationToken cancellationToken)
+                {
+                    throw new InvalidOperationException("No handlers registered.");
+                }
             }
-        }
-        """;
+            """;
     }
+
+    var getQueueName = (HandlerInfo handler) =>
+    $$"""
+    var queueName = {{(handler.QueueName is "Default" ? "serviceProvider.GetRequiredService<DefaultQueueName>().ActualQueueName" : $"\"{handler.QueueName}\"")}};
+    """;
+
 
     var handlerCases = string.Join("\n", handlers.Select(handler =>
     {
       var hash = $"m{System.Math.Abs(handler.ResponseType.GetHashCode())}";
       return $$"""
-                  case RequestMetadata<{{handler.ResponseType}}> {{hash}}:
-                  {
-                      var handler = serviceProvider.GetRequiredService<IHandler<{{handler.RequestType}}, {{handler.ResponseType}}>>();
-                      try
-                      {
-                          var response = await handler.Handle(({{handler.RequestType}}){{hash}}.Request, cancellationToken);
-                          {{hash}}.CompletionSource.SetResult(response);
-                      }
-                      catch (Exception ex)
-                      {
-                          {{hash}}.CompletionSource.SetException(ex);
-                      }
-                      break;
-                  }
-      """;
+                    case RequestMetadata<{{handler.ResponseType}}> {{hash}}:
+                    {
+                        {{getQueueName(handler)}}
+                        var middlewares = serviceProvider.GetKeyedServices<IPipelineBehavior>(queueName);
+                        var handler = serviceProvider.GetRequiredService<IHandler<{{handler.RequestType}}, {{handler.ResponseType}}>>();
+                        Func<Task<{{handler.ResponseType}}>> pipeline = async () => 
+                            await handler.Handle(({{handler.RequestType}}){{hash}}.Request, cancellationToken);
+                        
+                        foreach (var middleware in middlewares.Reverse())
+                        {
+                            var currentPipeline = pipeline;
+                            pipeline = async () => await middleware.Handle<{{handler.RequestType}}, {{handler.ResponseType}}>(
+                                ({{handler.RequestType}}){{hash}}.Request,
+                                currentPipeline,
+                                cancellationToken);
+                        }
+                        
+                        try
+                        {
+                            var response = await pipeline();
+                            {{hash}}.CompletionSource.SetResult(response);
+                        }
+                        catch (Exception ex)
+                        {
+                            {{hash}}.CompletionSource.SetException(ex);
+                        }
+                        break;
+                    }
+        """;
     }));
 
     return $$"""
-      file sealed class GeneratedHandlerDispatcher : IHandlerDispatcher
-      {
-          public async Task DispatchAsync(IRequestMetadata metadata, IServiceProvider serviceProvider, CancellationToken cancellationToken)
-          {
-              switch (metadata)
-              {
-      {{handlerCases}}
-                  default:
-                      throw new InvalidOperationException($"No handler registered for {metadata.GetType().Name}");
-              }
-          }
-      }
-      """;
+        file sealed class GeneratedHandlerDispatcher : IHandlerDispatcher
+        {
+            public async Task DispatchAsync(IRequestMetadata metadata, IServiceProvider serviceProvider, CancellationToken cancellationToken)
+            {
+                switch (metadata)
+                {
+        {{handlerCases}}
+                    default:
+                        throw new InvalidOperationException($"No handler registered for {metadata.GetType().Name}");
+                }
+            }
+        }
+        """;
   }
   private string GenerateRouterClass(List<HandlerInfo> handlers)
   {
@@ -228,7 +242,7 @@ public class JackdawGenerator : IIncrementalGenerator
           {
               var builder = new JackdawBuilder(services);
               configure?.Invoke(builder);
-              var isValid = builder.Valid();
+              var isValid = builder.Initialize();
               if (!isValid)
               {
                   throw new InvalidOperationException("Invalid Jackdaw configuration.");
