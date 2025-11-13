@@ -490,10 +490,10 @@ public class JackdawGenerator : IIncrementalGenerator
     var handlerRegistrations = string.Join("\n", handlers.Select(handler =>
       $$"""        services.AddScoped<IHandler<{{handler.RequestType}}, {{handler.ResponseType}}>, {{handler.HandlerType}}>();"""));
 
-    // Register authorizers as IJackdawAuthorizer<TRequest>
+    // Register authorizers as IAuthorizer<TRequest>
     var authorizerRegistrations = authorizers.Count > 0
         ? string.Join("\n", authorizers.Select(a =>
-            $$"""        services.AddScoped<Jackdaw.Authorization.IJackdawAuthorizer<{{a.RequestType}}>, {{a.AuthorizerType}}>();"""))
+            $$"""        services.AddScoped<Jackdaw.Authorization.IAuthorizer<{{a.RequestType}}>, {{a.AuthorizerType}}>();"""))
         : string.Empty;
 
     // Add IRequirementRouter registration if authorization is referenced
@@ -556,12 +556,12 @@ public class JackdawGenerator : IIncrementalGenerator
         if (classSymbol == null || classSymbol.IsAbstract)
           continue;
 
-        // Check if this class inherits from JackdawAuthorizer<T>
+        // Check if this class inherits from Authorizer<T>
         var baseType = classSymbol.BaseType;
         while (baseType != null)
         {
           if (baseType.IsGenericType &&
-              baseType.ConstructedFrom.ToDisplayString() == "Jackdaw.Authorization.JackdawAuthorizer<TRequest>")
+              baseType.ConstructedFrom.ToDisplayString() == "Jackdaw.Authorization.Authorizer<TRequest>")
           {
             var requestType = baseType.TypeArguments[0].ToDisplayString();
             authorizers.Add((classSymbol.ToDisplayString(), requestType));
@@ -584,11 +584,11 @@ public class JackdawGenerator : IIncrementalGenerator
 
 file sealed class GeneratedRequirementRouter : Jackdaw.Authorization.IRequirementRouter
 {
-    public System.Collections.Generic.IEnumerable<Jackdaw.Authorization.IAuthorizerRequirement> GetRequirements<TRequest, TResponse>(TRequest request) 
+    public System.Collections.Generic.IEnumerable<Jackdaw.Authorization.IRequirement> GetRequirements<TRequest, TResponse>(TRequest request) 
         where TResponse : Jackdaw.Interfaces.IResponse 
         where TRequest : Jackdaw.Interfaces.IRequest<TResponse>
     {
-        return System.Array.Empty<Jackdaw.Authorization.IAuthorizerRequirement>();
+        return System.Array.Empty<Jackdaw.Authorization.IRequirement>();
     }
 }
 """;
@@ -611,24 +611,24 @@ file sealed class GeneratedRequirementRouter : Jackdaw.Authorization.IRequiremen
         _scopeFactory = scopeFactory;
     }
 
-    public System.Collections.Generic.IEnumerable<Jackdaw.Authorization.IAuthorizerRequirement> GetRequirements<TRequest, TResponse>(TRequest request) 
+    public System.Collections.Generic.IEnumerable<Jackdaw.Authorization.IRequirement> GetRequirements<TRequest, TResponse>(TRequest request) 
         where TResponse : Jackdaw.Interfaces.IResponse 
         where TRequest : Jackdaw.Interfaces.IRequest<TResponse>
     {
         return request switch
         {
 {{switchCases}}
-            _ => System.Array.Empty<Jackdaw.Authorization.IAuthorizerRequirement>()
+            _ => System.Array.Empty<Jackdaw.Authorization.IRequirement>()
         };
     }
 
-    private System.Collections.Generic.IEnumerable<Jackdaw.Authorization.IAuthorizerRequirement> GetAuthorizerRequirements<TConcreteRequest>(TConcreteRequest request)
+    private System.Collections.Generic.IEnumerable<Jackdaw.Authorization.IRequirement> GetAuthorizerRequirements<TConcreteRequest>(TConcreteRequest request)
         where TConcreteRequest : notnull
     {
         using var scope = _scopeFactory.CreateScope();
-        var authorizer = scope.ServiceProvider.GetService<Jackdaw.Authorization.IJackdawAuthorizer<TConcreteRequest>>();
+        var authorizer = scope.ServiceProvider.GetService<Jackdaw.Authorization.IAuthorizer<TConcreteRequest>>();
         if (authorizer == null)
-            return System.Array.Empty<Jackdaw.Authorization.IAuthorizerRequirement>();
+            return System.Array.Empty<Jackdaw.Authorization.IRequirement>();
 
         // Build the policy - authorizer can inspect the request instance
         authorizer.BuildPolicy(request);

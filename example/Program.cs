@@ -106,7 +106,7 @@ public class TodoStore
 public record CreateTodoCommand(string Title, DateOnly? DueBy = null) : IRequest<CreateTodoResponse>;
 public record CreateTodoResponse(Todo CreatedTodo) : IResponse;
 
-public class CreateTodoAuthorizer : JackdawAuthorizer<CreateTodoCommand>
+public class CreateTodoAuthorizer : Authorizer<CreateTodoCommand>
 {
   public override void BuildPolicy(CreateTodoCommand instance)
   {
@@ -140,7 +140,7 @@ public class GetTodosHandler(TodoStore todoStore) : IHandler<GetTodosQuery, GetT
 public record GetTodoQuery(int Id) : IRequest<GetTodoResponse>;
 
 public record GetTodoResponse(Todo? Todo) : IResponse;
-public class GetTodoAuthorizer : JackdawAuthorizer<GetTodoQuery>
+public class GetTodoAuthorizer : Authorizer<GetTodoQuery>
 {
   public override void BuildPolicy(GetTodoQuery instance)
   {
@@ -213,7 +213,7 @@ public interface ISpecialHandler<TRequest, TResponse> : IHandler<TRequest, TResp
 {
 }
 
-public record SimpleRequirement(string PermissionName) : IAuthorizerRequirement;
+public record SimpleRequirement(string PermissionName) : IRequirement;
 // Test requirement handler for verification
 public class TestRequirementHandler(ILogger<TestRequirementHandler> logger) : IRequirementHandler<SimpleRequirement>
 {
@@ -224,7 +224,7 @@ public class TestRequirementHandler(ILogger<TestRequirementHandler> logger) : IR
   }
 }
 
-public record ExistsRequirement(int TodoId) : IAuthorizerRequirement;
+public record ExistsRequirement(int TodoId) : IRequirement;
 public class ExistsRequirementHandler(TodoStore todoStore, ILogger<ExistsRequirementHandler> logger) : IRequirementHandler<ExistsRequirement>
 {
   public Task<AuthorizationResult> Handle(ExistsRequirement request, CancellationToken cancellationToken)
