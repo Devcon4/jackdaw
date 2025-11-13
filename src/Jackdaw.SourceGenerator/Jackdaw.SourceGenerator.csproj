@@ -12,7 +12,7 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageId>Jackdaw.SourceGenerator</PackageId>
     <Description>Source generator for Jackdaw mediator library</Description>
-    <PackageTags>roslyn;source-generator;analyzer</PackageTags>
+    <PackageTags>source-generator</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
