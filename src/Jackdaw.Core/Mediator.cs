@@ -1,4 +1,5 @@
 // Mediator.cs
+using System.Runtime.CompilerServices;
 using Jackdaw.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -9,6 +10,8 @@ public interface IMediator
   Task<TResponse> Send<TResponse>(
     IRequest<TResponse> request,
     CancellationToken cancellationToken = default) where TResponse : IResponse;
+  IAsyncEnumerable<IResponse> SendAll(IEnumerable<IRequest<IResponse>> requests, CancellationToken cancellationToken = default);
+
 }
 
 public class Mediator(IQueueRouter router) : IMediator
@@ -31,8 +34,16 @@ public class Mediator(IQueueRouter router) : IMediator
 
     return await completionSource.Task;
   }
-}
 
+  public async IAsyncEnumerable<IResponse> SendAll(IEnumerable<IRequest<IResponse>> requests, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  {
+    foreach (var request in requests)
+    {
+      var response = await Send(request, cancellationToken);
+      yield return response;
+    }
+  }
+}
 // Router interface (generated code will implement this)
 public interface IQueueRouter
 {

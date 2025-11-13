@@ -17,6 +17,7 @@ env:
   CORE_PROJECT_PATH: 'src/Jackdaw.Core/Jackdaw.Core.csproj'
   INTERFACES_PROJECT_PATH: 'src/Jackdaw.Interfaces/Jackdaw.Interfaces.csproj'
   INMEMORY_PROJECT_PATH: 'src/Jackdaw.Queues.InMemory/Jackdaw.Queues.InMemory.csproj'
+  AUTHORIZATION_PROJECT_PATH: 'src/Jackdaw.Authorization/Jackdaw.Authorization.csproj'
   GENERATOR_PATH: 'src/Jackdaw.SourceGenerator/Jackdaw.SourceGenerator.csproj'
   PACKAGE_OUTPUT_DIR: ${{ github.workspace }}/nupkgs
 
@@ -40,11 +41,13 @@ jobs:
         dotnet restore ${{ env.GENERATOR_PATH }}
         dotnet restore ${{ env.INTERFACES_PROJECT_PATH }}
         dotnet restore ${{ env.INMEMORY_PROJECT_PATH }}
+        dotnet restore ${{ env.AUTHORIZATION_PROJECT_PATH }}
         dotnet restore ${{ env.CORE_PROJECT_PATH }}
         
         dotnet build ${{ env.GENERATOR_PATH }} -c Release --no-restore
         dotnet build ${{ env.INTERFACES_PROJECT_PATH }} -c Release --no-restore
         dotnet build ${{ env.INMEMORY_PROJECT_PATH }} -c Release --no-restore
+        dotnet build ${{ env.AUTHORIZATION_PROJECT_PATH }} -c Release --no-restore
         dotnet build ${{ env.CORE_PROJECT_PATH }} -c Release --no-restore
 
     - name: Set version from release tag
@@ -58,6 +61,7 @@ jobs:
         dotnet pack ${{ env.GENERATOR_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
         dotnet pack ${{ env.INTERFACES_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
         dotnet pack ${{ env.INMEMORY_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
+        dotnet pack ${{ env.AUTHORIZATION_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
         dotnet pack ${{ env.CORE_PROJECT_PATH }} -c Release --no-build --output ${{ env.PACKAGE_OUTPUT_DIR }} /p:PackageVersion=$PACKAGE_VERSION
 
     - name: Upload artifact

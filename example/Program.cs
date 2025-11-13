@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using Jackdaw.Authorization;
 using Jackdaw.Core;
 using Jackdaw.Interfaces;
 using Jackdaw.Queues.InMemory;
@@ -16,14 +18,18 @@ builder.Services.AddSingleton<TodoStore>();
 
 builder.Services.AddJackdaw(jackdaw =>
 {
-  jackdaw.UseMiddleware<TimingMiddleware>();
+  jackdaw
+    .AddAuthorization()
+    .UseMiddleware<TimingMiddleware>();
 
   jackdaw.AddQueue("TodosQueue")
+      .UseAuthorization()
       .UseMiddleware<LoggingMiddleware>()
       .UseInMemory()
       .AsDefault();
 
   jackdaw.AddQueue("DomainEvents").UseInMemory();
+  jackdaw.AddQueue("SpecialJobs").UseInMemory();
 });
 
 var app = builder.Build();
@@ -43,6 +49,22 @@ todosApi.MapPost("/", async ([FromBody] CreateTodoCommand command, [FromServices
 {
   var response = await mediator.Send(command);
   return Results.Created($"/todos/{response.CreatedTodo.Id}", response.CreatedTodo);
+});
+
+app.UseExceptionHandler(static handler =>
+{
+  handler.Run(static async context =>
+  {
+    var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
+    if (exception is JackdawAuthorizationException authEx)
+    {
+      context.Response.StatusCode = 404;
+      await context.Response.WriteAsync(authEx.Message);
+      return;
+    }
+    context.Response.StatusCode = 500;
+    await context.Response.WriteAsync("An unexpected error occurred.");
+  });
 });
 
 app.Run();
@@ -83,6 +105,15 @@ public class TodoStore
 
 public record CreateTodoCommand(string Title, DateOnly? DueBy = null) : IRequest<CreateTodoResponse>;
 public record CreateTodoResponse(Todo CreatedTodo) : IResponse;
+
+public class CreateTodoAuthorizer : JackdawAuthorizer<CreateTodoCommand>
+{
+  public override void BuildPolicy(CreateTodoCommand instance)
+  {
+    UseRequirement(new SimpleRequirement("TestAllow"));
+  }
+}
+
 public class CreateTodoHandler(TodoStore todoStore) : IHandler<CreateTodoCommand, CreateTodoResponse>
 {
   public Task<CreateTodoResponse> Handle(CreateTodoCommand request, CancellationToken cancellationToken)
@@ -109,6 +140,13 @@ public class GetTodosHandler(TodoStore todoStore) : IHandler<GetTodosQuery, GetT
 public record GetTodoQuery(int Id) : IRequest<GetTodoResponse>;
 
 public record GetTodoResponse(Todo? Todo) : IResponse;
+public class GetTodoAuthorizer : JackdawAuthorizer<GetTodoQuery>
+{
+  public override void BuildPolicy(GetTodoQuery instance)
+  {
+    UseRequirement(new ExistsRequirement(instance.Id));
+  }
+}
 
 public class GetTodoHandler(IMediator mediator, TodoStore todoStore) : IHandler<GetTodoQuery, GetTodoResponse>
 {
@@ -124,11 +162,22 @@ public record FetchEvent() : IRequest<FetchEventResponse>;
 public record FetchEventResponse(string Message) : IResponse;
 
 [JackdawQueue("DomainEvents")]
-public class FetchEventHandler : IHandler<FetchEvent, FetchEventResponse>
+public class FetchEventHandler(ILogger<FetchEventHandler> logger) : IHandler<FetchEvent, FetchEventResponse>
 {
   public Task<FetchEventResponse> Handle(FetchEvent request, CancellationToken cancellationToken)
   {
+    logger.LogInformation("Handling fetch event.");
     return Task.FromResult(new FetchEventResponse("Event fetched successfully."));
+  }
+}
+
+[JackdawQueue("DomainEvents")]
+public class FetchSecondaryHandler(ILogger<FetchSecondaryHandler> logger) : IHandler<FetchEvent, FetchEventResponse>
+{
+  public Task<FetchEventResponse> Handle(FetchEvent request, CancellationToken cancellationToken)
+  {
+    logger.LogInformation("Handling secondary fetch event.");
+    return Task.FromResult(new FetchEventResponse("Secondary event fetched successfully."));
   }
 }
 
@@ -157,13 +206,41 @@ public class TimingMiddleware(ILogger<TimingMiddleware> logger) : IPipelineBehav
   }
 }
 
-public class AuthenticationMiddleware(ILogger<AuthenticationMiddleware> logger) : IPipelineBehavior
+[JackdawQueue("SpecialJobs")]
+public interface ISpecialHandler<TRequest, TResponse> : IHandler<TRequest, TResponse>
+  where TRequest : IRequest<TResponse>
+  where TResponse : IResponse
 {
-  public Task<TResponse> Handle<TRequest, TResponse>(TRequest request, Func<Task<TResponse>> next, CancellationToken cancellationToken)
-    where TRequest : IRequest<TResponse>
-    where TResponse : IResponse
+}
+
+public record SimpleRequirement(string PermissionName) : IAuthorizerRequirement;
+// Test requirement handler for verification
+public class TestRequirementHandler(ILogger<TestRequirementHandler> logger) : IRequirementHandler<SimpleRequirement>
+{
+  public Task<AuthorizationResult> Handle(SimpleRequirement request, CancellationToken cancellationToken)
   {
-    logger.LogInformation("Authenticating request of type {RequestType}", typeof(TRequest).Name);
-    throw new UnauthorizedAccessException("Authentication failed.");
+    logger.LogInformation("Handling simple requirement: {PermissionName}", request.PermissionName);
+    return Task.FromResult(new AuthorizationResult(request.PermissionName == "TestAllow", "Permission name did not match 'TestAllow'"));
+  }
+}
+
+public record ExistsRequirement(int TodoId) : IAuthorizerRequirement;
+public class ExistsRequirementHandler(TodoStore todoStore, ILogger<ExistsRequirementHandler> logger) : IRequirementHandler<ExistsRequirement>
+{
+  public Task<AuthorizationResult> Handle(ExistsRequirement request, CancellationToken cancellationToken)
+  {
+    var exists = todoStore.Query().Any(t => t.Id == request.TodoId);
+    logger.LogInformation("Handling exists requirement for TodoId {TodoId}: Exists={Exists}", request.TodoId, exists);
+    return Task.FromResult(new AuthorizationResult(exists, !exists ? "Todo item does not exist." : null));
+  }
+}
+
+public record SpecialCommand() : IRequest<SpecialResponse>;
+public record SpecialResponse(string Message) : IResponse;
+public class SpecialHandler() : ISpecialHandler<SpecialCommand, SpecialResponse>
+{
+  public Task<SpecialResponse> Handle(SpecialCommand request, CancellationToken cancellationToken)
+  {
+    return Task.FromResult(new SpecialResponse("Special job completed."));
   }
 }

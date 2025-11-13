@@ -52,7 +52,7 @@ public class QueueBuilder
     return this;
   }
 
-  internal QueueBuilder AddValidation(Func<QueueBuilder, (bool, Exception?)> validation)
+  public QueueBuilder AddValidation(Func<QueueBuilder, (bool, Exception?)> validation)
   {
     _validations += validation;
     return this;

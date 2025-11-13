@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\Jackdaw.Core\Jackdaw.Core.csproj" />
+    <ProjectReference Include="..\src\Jackdaw.Authorization\Jackdaw.Authorization.csproj" />
     <ProjectReference Include="..\src\Jackdaw.Queues.InMemory\Jackdaw.Queues.InMemory.csproj" />
     <!-- include sourceGenerator -->
     <ProjectReference Include="..\src\Jackdaw.SourceGenerator\Jackdaw.SourceGenerator.csproj" 
