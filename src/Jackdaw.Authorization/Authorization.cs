@@ -22,7 +22,6 @@ public static class JackdawAuthorizationExtensions
 {
   public static JackdawBuilder AddAuthorization(this JackdawBuilder builder)
   {
-    // queue AuthorizationOptions.InternalQueueName is reserved for authorization purposes and should not be used by other queues.
     if (builder.GetQueueNames().Contains(AuthorizationOptions.InternalQueueName))
     {
       builder.AddValidation(b => (false, new InvalidOperationException($"The queue name '{AuthorizationOptions.InternalQueueName}' is reserved for authorization purposes and cannot be used.")));
@@ -37,6 +36,7 @@ public static class JackdawAuthorizationExtensions
     return builder;
   }
 }
+
 public record AuthorizationOptions()
 {
   public const string InternalQueueName = "__AuthorizationQueue";
@@ -56,19 +56,8 @@ public abstract class JackdawAuthorizer<TRequest> : IJackdawAuthorizer<TRequest>
 [JackdawQueue(AuthorizationOptions.InternalQueueName)]
 public interface IRequirementHandler<TRequirement> : IHandler<TRequirement, AuthorizationResult>
   where TRequirement : IAuthorizerRequirement
-{
-}
+{ }
 
-public record SampleRequirement(string PermissionName) : IAuthorizerRequirement;
-public class SampleRequirementHandler : IRequirementHandler<SampleRequirement>
-{
-  public Task<AuthorizationResult> Handle(SampleRequirement request, CancellationToken cancellationToken)
-  {
-    return Task.FromResult(new AuthorizationResult(request.PermissionName == "Allow"));
-  }
-}
-
-// Generated through source generator; Maps routes to list of requirements
 public interface IRequirementRouter
 {
   IEnumerable<IAuthorizerRequirement> GetRequirements<TRequest, TResponse>(TRequest request) where TResponse : IResponse where TRequest : IRequest<TResponse>;
